@@ -37,11 +37,10 @@ function sanitize_column_name($name){
 	return $name;
 }
 
-function create_entries_table($fields){
+function create_entries_table($fields,$table_name){
 	global $wpdb;
 
 	$charset_collate = $wpdb->get_charset_collate();
-	$table_name = $wpdb->prefix . "wpforms_submissions"; 
 
 	$statement = "id mediumint(9) NOT NULL AUTO_INCREMENT,";
 	foreach($fields as $key =>$value){
@@ -51,14 +50,18 @@ function create_entries_table($fields){
 	$statement = $statement."PRIMARY KEY  (id)";
 	
 	$sql_create = "CREATE TABLE $table_name ($statement)$charset_collate;";
-
-	maybe_create_table($table_name,$sql_create);
+	#true if table was created
+	if(maybe_create_table($table_name,$sql_create)){
+		return true;
+		}
+		else{
+			return false;
+	};
 
 }
 
-function insert_entry_to_table($fields){
+function insert_entry_to_table($fields,$table_name){
 	global $wpdb;
-	$table_name = $wpdb->prefix . "wpforms_submissions"; 
 
 	$statement = "INSERT INTO {$table_name} (";
 	foreach($fields as $key=>$value){
@@ -76,19 +79,22 @@ function insert_entry_to_table($fields){
 		}else{
 			$statement = $statement."'{$value['value']}',";
 		}
-		//echo "{$value['name']}->{$value['value']}";
 	}
-	echo $statement;
 	$sql_insert = $wpdb->prepare($statement);
-	$wpdb->query($sql_insert);
+	#return true if row was inserted
+	if($wpdb->query($sql_insert)!=false){
+		return true;
+	}else{
+		return false;
+	};
 }
 
 function wpf_dev_process_complete( $fields, $entry, $form_data, $entry_id ) {
 	global $wpdb;
-	$table_name = $wpdb->prefix . "wpforms_submissions"; 
-
-	create_entries_table($fields);
-	insert_entry_to_table($fields);
+	$table_name = $wpdb->prefix . "wpforms_submissions_".$form_data['id']; 
+	create_entries_table($fields,$table_name);
+	insert_entry_to_table($fields,$table_name);
+	echo "ID of last inserted record is: " . mysql_insert_id();
 
 
 
@@ -105,7 +111,13 @@ function wpf_dev_frontend_confirmation_message( ) {
 }
 add_filter( 'wpforms_frontend_confirmation_message', 'wpf_dev_frontend_confirmation_message', 10, 4 );
 
-if(isset($_POST["submit-download-pdf"])){
+function generate_pdf($id,$table){
+	global $wpdb;
+
+	$query = "SELECT * FROM {$table} WHERE id = {$id}";
+	$result = $wpdb -> query($query);
+	echo var_dump($result);
+
 	$pdf = new PDF();
 	$pdf->AliasNbPages();
 	$pdf->AddPage();
@@ -113,7 +125,11 @@ if(isset($_POST["submit-download-pdf"])){
 	for($i=1;$i<=40;$i++){
     	$pdf->Cell(0,10,'Printing line number '.$i,0,1);
 	}
-	$pdf->Output('D');
+	//$pdf->Output('D');
+}
+
+if(isset($_POST["submit-download-pdf"])){
+	generate_pdf();
 
 }
 
