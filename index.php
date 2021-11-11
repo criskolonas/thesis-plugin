@@ -37,7 +37,7 @@ function sanitize_column_name($name){
 	return $name;
 }
 
-function create_table_statement($fields){
+function create_entries_table($fields){
 	global $wpdb;
 
 	$charset_collate = $wpdb->get_charset_collate();
@@ -46,10 +46,9 @@ function create_table_statement($fields){
 	$statement = "id mediumint(9) NOT NULL AUTO_INCREMENT,";
 	foreach($fields as $key =>$value){
 		$statement = $statement.sanitize_column_name($fields[$key]['name'])."
-		varchar(50) NOT NULL,";
+		varchar(255) NOT NULL,";
 	}
 	$statement = $statement."PRIMARY KEY  (id)";
-	echo $statement;
 	
 	$sql_create = "CREATE TABLE $table_name ($statement)$charset_collate;";
 
@@ -57,26 +56,41 @@ function create_table_statement($fields){
 
 }
 
+function insert_entry_to_table($fields){
+	global $wpdb;
+	$table_name = $wpdb->prefix . "wpforms_submissions"; 
+
+	$statement = "INSERT INTO {$table_name} (";
+	foreach($fields as $key=>$value){
+		if(array_key_last($fields)==$key){
+			$statement = $statement.sanitize_column_name($value['name']).")";
+		}else{
+			$statement = $statement.sanitize_column_name($value['name']).",";
+		}
+		//echo "{$value['name']}->{$value['value']}";
+	}
+	$statement = $statement." VALUES (";
+	foreach($fields as $key=>$value){
+		if(array_key_last($fields)==$key){
+			$statement = $statement."'{$value['value']}')";
+		}else{
+			$statement = $statement."'{$value['value']}',";
+		}
+		//echo "{$value['name']}->{$value['value']}";
+	}
+	echo $statement;
+	$sql_insert = $wpdb->prepare($statement);
+	$wpdb->query($sql_insert);
+}
+
 function wpf_dev_process_complete( $fields, $entry, $form_data, $entry_id ) {
 	global $wpdb;
+	$table_name = $wpdb->prefix . "wpforms_submissions"; 
 
-	create_table_statement($fields);
-	
-	$first =$fields[1]['first'];
-	$last =  $fields[1]['last'];
-	$aem = $fields[2]['value'];
+	create_entries_table($fields);
+	insert_entry_to_table($fields);
 
-	$sql_insert = $wpdb->prepare(("INSERT INTO $table_name (first, last, aem) VALUES ('$first', '$last', '$aem') "));
-	$wpdb->query($sql_insert);
 
-	$pdf = new PDF();
-	$pdf->AliasNbPages();
-	$pdf->AddPage();
-	$pdf->SetFont('Times','',12);
-	for($i=1;$i<=40;$i++){
-    	$pdf->Cell(0,10,'Printing line number '.$i,0,1);
-	}
-	$pdf->Output();
 
 }
 add_action( 'wpforms_process_complete', 'wpf_dev_process_complete', 10, 4 );
@@ -85,9 +99,21 @@ add_action( 'wpforms_process_complete', 'wpf_dev_process_complete', 10, 4 );
 
 function wpf_dev_frontend_confirmation_message( ) {
     
-    $message = '<button id="download-pdf-btn" type="button">Download the PDF!</button>';
+    $message = '<form method="post"><input type="submit" name="submit-download-pdf" id="download-pdf-btn"  value="Download the PDF!" ></form>';
     return $message;
       
 }
 add_filter( 'wpforms_frontend_confirmation_message', 'wpf_dev_frontend_confirmation_message', 10, 4 );
+
+if(isset($_POST["submit-download-pdf"])){
+	$pdf = new PDF();
+	$pdf->AliasNbPages();
+	$pdf->AddPage();
+	$pdf->SetFont('Times','',12);
+	for($i=1;$i<=40;$i++){
+    	$pdf->Cell(0,10,'Printing line number '.$i,0,1);
+	}
+	$pdf->Output('D');
+
+}
 
