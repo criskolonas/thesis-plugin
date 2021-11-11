@@ -3,10 +3,12 @@
 Plugin Name: Thesis Plugin
 Plugin URI: 
 Description: Database for WPForms Submissions and export to PDF
-Author: MTT
+Author: Chris Kolonas
 Author URI: http://https://github.com/criskolonas
 Version: 0.1
 */
+
+
 
 require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 require(ABSPATH . 'wp-content/plugins/thesis-plugin/libs/fpdf184/fpdf.php');
@@ -28,24 +30,38 @@ class PDF extends FPDF
 
 	}
 }
+ #Replace spaces and make lowercase for column names
+function sanitize_column_name($name){
+	$name = str_replace(' ', '_', $name);
+	$name = strtolower($name);
+	return $name;
+}
 
-function wpf_dev_process_complete( $fields, $entry, $form_data, $entry_id ) {
-	
+function create_table_statement($fields){
 	global $wpdb;
 
 	$charset_collate = $wpdb->get_charset_collate();
 	$table_name = $wpdb->prefix . "wpforms_submissions"; 
 
-	$sql_create = "CREATE TABLE $table_name (
-  		id mediumint(9) NOT NULL AUTO_INCREMENT,
-  		first varchar(50) NOT NULL,
-		last varchar(50) NOT NULL,
-  		aem int(255) NOT NULL,
-  		PRIMARY KEY  (id)
-	) $charset_collate;";
+	$statement = "id mediumint(9) NOT NULL AUTO_INCREMENT,";
+	foreach($fields as $key =>$value){
+		$statement = $statement.sanitize_column_name($fields[$key]['name'])."
+		varchar(50) NOT NULL,";
+	}
+	$statement = $statement."PRIMARY KEY  (id)";
+	echo $statement;
+	
+	$sql_create = "CREATE TABLE $table_name ($statement)$charset_collate;";
 
 	maybe_create_table($table_name,$sql_create);
 
+}
+
+function wpf_dev_process_complete( $fields, $entry, $form_data, $entry_id ) {
+	global $wpdb;
+
+	create_table_statement($fields);
+	
 	$first =$fields[1]['first'];
 	$last =  $fields[1]['last'];
 	$aem = $fields[2]['value'];
@@ -74,3 +90,4 @@ function wpf_dev_frontend_confirmation_message( ) {
       
 }
 add_filter( 'wpforms_frontend_confirmation_message', 'wpf_dev_frontend_confirmation_message', 10, 4 );
+
