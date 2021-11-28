@@ -12,6 +12,9 @@ Version: 0.1
 
 require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 require(ABSPATH . 'wp-content/plugins/thesis-plugin/libs/fpdf184/fpdf.php');
+require(ABSPATH . 'wp-content/plugins/thesis-plugin/includes/admin.php');
+
+$table_name;
 
 class PDF extends FPDF
 {
@@ -62,74 +65,53 @@ function create_entries_table($fields,$table_name){
 
 function insert_entry_to_table($fields,$table_name){
 	global $wpdb;
+	$insert_array = array();
 
-	$statement = "INSERT INTO {$table_name} (";
 	foreach($fields as $key=>$value){
-		if(array_key_last($fields)==$key){
-			$statement = $statement.sanitize_column_name($value['name']).")";
-		}else{
-			$statement = $statement.sanitize_column_name($value['name']).",";
-		}
-		//echo "{$value['name']}->{$value['value']}";
+		$k = sanitize_column_name($value['name']);
+		$v = $value['value'];
+		$insert_array[$k] = $v;
+
 	}
-	$statement = $statement." VALUES (";
-	foreach($fields as $key=>$value){
-		if(array_key_last($fields)==$key){
-			$statement = $statement."'{$value['value']}')";
-		}else{
-			$statement = $statement."'{$value['value']}',";
-		}
-	}
-	$sql_insert = $wpdb->prepare($statement);
-	#return true if row was inserted
-	if($wpdb->query($sql_insert)!=false){
-		return true;
-	}else{
-		return false;
-	};
+
+	$wpdb->insert($table_name,$insert_array);
+
+	return $wpdb->insert_id;
+
 }
 
-function wpf_dev_process_complete( $fields, $entry, $form_data, $entry_id ) {
+function wpf_dev_process_complete( $fields, $entry, $form_data, $entry_id) {
 	global $wpdb;
-	$table_name = $wpdb->prefix . "wpforms_submissions_".$form_data['id']; 
+	$table_name = $wpdb->prefix . "submissions_table_".$form_data['id']; 
 	create_entries_table($fields,$table_name);
-	insert_entry_to_table($fields,$table_name);
-	echo "ID of last inserted record is: " . mysql_insert_id();
-
+	$last_id=insert_entry_to_table($fields,$table_name);
+	generate_pdf($last_id,$table_name);
 
 
 }
-add_action( 'wpforms_process_complete', 'wpf_dev_process_complete', 10, 4 );
+add_action( 'wpforms_process_complete', 'wpf_dev_process_complete', 10, 4);
 
-
-
-function wpf_dev_frontend_confirmation_message( ) {
-    
-    $message = '<form method="post"><input type="submit" name="submit-download-pdf" id="download-pdf-btn"  value="Download the PDF!" ></form>';
-    return $message;
-      
-}
-add_filter( 'wpforms_frontend_confirmation_message', 'wpf_dev_frontend_confirmation_message', 10, 4 );
 
 function generate_pdf($id,$table){
 	global $wpdb;
-
 	$query = "SELECT * FROM {$table} WHERE id = {$id}";
-	$result = $wpdb -> query($query);
-	echo var_dump($result);
-
+	$result = $wpdb -> get_results($query)[0];
 	$pdf = new PDF();
 	$pdf->AliasNbPages();
 	$pdf->AddPage();
 	$pdf->SetFont('Times','',12);
-	for($i=1;$i<=40;$i++){
-    	$pdf->Cell(0,10,'Printing line number '.$i,0,1);
+	foreach($result as $key=>$value){
+		$pdf->Cell(40,10,$key);
+		$pdf->Ln();
+		$pdf->Cell(40,10,$value);
+		$pdf->Ln();
 	}
-	//$pdf->Output('D');
+	
+	$pdf->Output('I');
 }
+
 
 if(isset($_POST["submit-download-pdf"])){
-	generate_pdf();
+	generate_pdf($wpdb->insert_id,$table_name);
 
 }
-
