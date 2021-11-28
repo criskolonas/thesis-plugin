@@ -10,12 +10,13 @@ function thesis_plugin_menu(){
 
 function form_entries(){
     global $wpdb;
-
+    $tables = $wpdb -> get_results("SHOW TABLES FROM local LIKE '".$wpdb->prefix."submissions_table_%'");
     echo '<form action="">
     <label for="tables">Select Entries Table:</label>
     <select name="tables" id="tables">';
-    foreach ($wpdb->tables('old',true) as $key=>$table_name )
+    foreach ($tables as $key=>$value )
     {
+        foreach($value as $table_name)
        echo '<option value="'.$table_name.'">'.$table_name.'</option>';
 
     }
