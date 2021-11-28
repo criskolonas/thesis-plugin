@@ -1,7 +1,7 @@
 <?php 
 
 function enqueue_my_custom_script() {
-    wp_enqueue_script( 'load_entries_js', ABSPATH.'wp-content/plugins/thesis-plugin/scripts/load_entries.js',array('jquery'),true);
+    wp_enqueue_script( 'load_entries',WP_CONTENT_URL.'/plugins/thesis-plugin/scripts/load_entries.js',array('jquery'),false,true);
 }
 
 add_action( 'admin_enqueue_scripts', 'enqueue_my_custom_script' );
@@ -17,8 +17,9 @@ function thesis_plugin_menu(){
 
 function form_entries(){
     global $wpdb;
+    $action = WP_CONTENT_URL.'/plugins/thesis-plugin/includes/entries.php';
     $tables = $wpdb -> get_results("SHOW TABLES FROM local LIKE '".$wpdb->prefix."submissions_table_%'");
-    echo '<form method="POST" action="" id="table_form">
+    echo '<form method="POST" action="'.$action.'" id="table_form">
     <label for="tables">Select Entries Table:</label>
     <select name="tables" id="tables">';
     foreach ($tables as $key=>$value )
