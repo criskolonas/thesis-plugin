@@ -14,6 +14,7 @@ require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 require(ABSPATH . 'wp-content/plugins/thesis-plugin/libs/fpdf184/fpdf.php');
 require(ABSPATH . 'wp-content/plugins/thesis-plugin/includes/admin.php');
 
+
 $table_name;
 
 class PDF extends FPDF
