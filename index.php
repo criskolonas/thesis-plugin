@@ -13,27 +13,13 @@ Version: 0.1
 require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 require(ABSPATH . 'wp-content/plugins/thesis-plugin/libs/fpdf184/fpdf.php');
 require(ABSPATH . 'wp-content/plugins/thesis-plugin/includes/admin.php');
+require(ABSPATH . 'wp-content/plugins/thesis-plugin/includes/class-pdf.php');
+
 
 
 $table_name;
 
-class PDF extends FPDF
-{
-	function Header(){
-		// Select Arial bold 15
-		$this->SetFont('Arial','B',15);
-		// Move to the right
-		$this->Cell(80);
-		// Framed title
-		$this->Cell(40,10,'Aristotle University of Thessaloniki',0,0,'C');
-		// Line break
-		$this->Ln(20);
-	}
 
-	function Footer(){
-
-	}
-}
  #Replace spaces and make lowercase for column names
 function sanitize_column_name($name){
 	$name = str_replace(' ', '_', $name);
@@ -98,17 +84,7 @@ function generate_pdf($id,$table){
 	$query = "SELECT * FROM {$table} WHERE id = {$id}";
 	$result = $wpdb -> get_results($query)[0];
 	$pdf = new PDF();
-	$pdf->AliasNbPages();
-	$pdf->AddPage();
-	$pdf->SetFont('Times','',12);
-	foreach($result as $key=>$value){
-		$pdf->Cell(40,10,$key);
-		$pdf->Ln();
-		$pdf->Cell(40,10,$value);
-		$pdf->Ln();
-	}
-	
-	$pdf->Output('I');
+	$pdf->create_pdf($result);
 }
 
 
