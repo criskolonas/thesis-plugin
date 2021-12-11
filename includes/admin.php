@@ -25,10 +25,22 @@ function load_entries(){
 	global $wpdb;
     $target = $_POST['table'];
     $data = $wpdb->get_results("SELECT * FROM {$target}");
-    echo var_dump($data);
+    $html ="<table>";
+    foreach($data as $ob){
+        $html .="<tr>";
+        foreach($ob as $key=>$value){
+            $html.= "<td>".$value."</td>";     
+        }
+        $html .="</tr>";
+    }
+    $html .="</table>";
+
+    echo $html;
 }
 //Its wp_ajax{name used in jquery}
 add_action( 'wp_ajax_load_entries_ajax', 'load_entries' );
+add_action( 'wp_ajax_nopriv_load_entries_ajax', 'load_entries' );
+
 
 function form_entries(){
     global $wpdb;
@@ -47,7 +59,7 @@ function form_entries(){
     echo 
     '</select>
     <br><br>
-    <input type="submit" value="Submit">
+    <input type="submit" value="Get Entries">
   </form>
     ';
 
