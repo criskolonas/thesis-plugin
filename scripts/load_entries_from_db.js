@@ -1,3 +1,6 @@
+/*
+    AJAX is used to call the load_entries() function and output its return value to a div
+*/
 jQuery(document).ready(function () {
     jQuery("#table_form").submit(function (e) { 
         e.preventDefault();
